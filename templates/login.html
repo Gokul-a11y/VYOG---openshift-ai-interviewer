@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}
+OpenShift AI Interviewer
+{% endblock %}
+
+{% block content %}
+
+<div class="hero">
+
+    <div class="container">
+
+        <div class="hero-grid">
+
+            <!-- LEFT SIDE -->
+
+            <section>
+
+                <div class="eyebrow">
+                    ● AI-POWERED INTERVIEW PLATFORM
+                </div>
+
+                <h1>
+                    OpenShift
+                    <span>Solution Architect</span>
+                    Interviewer
+                </h1>
+
+                <p>
+                    Practice enterprise-grade Red Hat OpenShift
+                    architecture interviews with realistic technical
+                    scenarios, evaluation and architect-level feedback.
+                </p>
+
+
+                <div class="feature-grid">
+
+                    <div class="feature-card">
+
+                        <div class="feature-icon">
+                            🏗️
+                        </div>
+
+                        <h3>
+                            Architecture
+                        </h3>
+
+                        <p>
+                            Enterprise OpenShift design
+                        </p>
+
+                    </div>
+
+
+                    <div class="feature-card">
+
+                        <div class="feature-icon">
+                            ⚙️
+                        </div>
+
+                        <h3>
+                            GitOps
+                        </h3>
+
+                        <p>
+                            Argo CD & CI/CD
+                        </p>
+
+                    </div>
+
+
+                    <div class="feature-card">
+
+                        <div class="feature-icon">
+                            🔐
+                        </div>
+
+                        <h3>
+                            Security
+                        </h3>
+
+                        <p>
+                            Enterprise security
+                        </p>
+
+                    </div>
+
+
+                    <div class="feature-card">
+
+                        <div class="feature-icon">
+                            📊
+                        </div>
+
+                        <h3>
+                            Evaluation
+                        </h3>
+
+                        <p>
+                            Architect-level scoring
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- LOGIN -->
+
+            <section class="login-panel fade-in">
+
+                <div class="feature-icon">
+                    🤖
+                </div>
+
+                <h2>
+                    Welcome back
+                </h2>
+
+                <p>
+                    Sign in to start your OpenShift
+                    interview preparation.
+                </p>
+
+
+                {% if error %}
+
+                <div class="alert">
+                    {{ error }}
+                </div>
+
+                {% endif %}
+
+
+                {% if google_configured %}
+
+                <a
+                     href="{{ url_for('google_login') }}" class="google-btn">
+    <span>G</span>
+    Continue with Google
+</a></span>
+
+                    Continue with Google
+
+                </a>
+
+                {% else %}
+
+                <div class="alert">
+
+                    Google authentication is not configured.
+
+                    <br><br>
+
+                    Add your Google credentials
+                    to the <strong>.env</strong> file.
+
+                </div>
+
+                {% endif %}
+
+
+                <div
+                    style="
+                        margin-top:25px;
+                        padding:18px;
+                        border:1px solid var(--border);
+                        border-radius:12px;
+                        background:#081522;
+                    "
+                >
+
+                    <strong>
+                        🔒 Secure authentication
+                    </strong>
+
+                    <p
+                        style="
+                            margin:6px 0 0;
+                            font-size:13px;
+                        "
+                    >
+                        Your Google password is never stored
+                        by this application.
+                    </p>
+
+                </div>
+
+
+                <div
+                    style="
+                        margin-top:25px;
+                        color:var(--muted);
+                        font-size:13px;
+                    "
+                >
+
+                    <strong>
+                        INTERVIEW PLATFORM
+                    </strong>
+
+                    <br>
+
+                    Red Hat OpenShift • Solution Architecture
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

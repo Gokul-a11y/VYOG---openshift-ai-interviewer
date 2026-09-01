@@ -1,0 +1,358 @@
+[
+  {
+    "id": 1,
+    "category": "OpenShift Architecture",
+    "difficulty": "Architect",
+    "question": "How would you architect an enterprise OpenShift platform across multiple regions and environments?",
+    "keywords": [
+      "multi-cluster",
+      "high availability",
+      "disaster recovery",
+      "GitOps",
+      "security",
+      "networking",
+      "RBAC",
+      "observability"
+    ],
+    "model_answer": "I would design a multi-cluster OpenShift architecture separating development, staging and production environments. Production clusters should be distributed across appropriate failure domains or regions. OpenShift GitOps with Argo CD and ApplicationSets can provide consistent application and platform configuration. Enterprise identity should integrate with an identity provider, while RBAC and network policies enforce isolation. Secrets should be managed through an external secret-management mechanism. Monitoring, logging and alerting should be centralized, and the platform should have a tested disaster-recovery strategy.",
+    "follow_up": "How would you design disaster recovery if an entire production region became unavailable?"
+  },
+  {
+    "id": 2,
+    "category": "GitOps",
+    "difficulty": "Architect",
+    "question": "How would you implement GitOps across 50 OpenShift clusters?",
+    "keywords": [
+      "Argo CD",
+      "ApplicationSet",
+      "multi-cluster",
+      "GitOps",
+      "sync waves",
+      "self-healing",
+      "drift",
+      "RBAC"
+    ],
+    "model_answer": "I would use Red Hat OpenShift GitOps based on Argo CD and ApplicationSets to dynamically generate applications for the cluster fleet. Repositories should separate platform configuration from application configuration. ApplicationSets can use cluster or repository generators to avoid manually defining applications. Sync waves can control dependency ordering. Automated synchronization and self-healing continuously reconcile the desired state. RBAC should restrict access based on team responsibilities, and secrets should never be committed as raw passwords.",
+    "follow_up": "How would you manage secrets without storing passwords in Git?"
+  },
+  {
+    "id": 3,
+    "category": "GitOps",
+    "difficulty": "Advanced",
+    "question": "Explain App-of-Apps versus ApplicationSet in Argo CD.",
+    "keywords": [
+      "App-of-Apps",
+      "ApplicationSet",
+      "Argo CD",
+      "multi-cluster",
+      "templating",
+      "GitOps"
+    ],
+    "model_answer": "The App-of-Apps pattern uses a parent Argo CD application to manage child applications. It is useful for hierarchical organization. ApplicationSet provides generators and templates that dynamically create Argo CD Applications from clusters, repositories, directories or other sources. ApplicationSet is particularly useful for large multi-cluster environments because it reduces repetitive application definitions.",
+    "follow_up": "How would you use sync waves when applications have deployment dependencies?"
+  },
+  {
+    "id": 4,
+    "category": "Kubernetes",
+    "difficulty": "Architect",
+    "question": "What is the difference between Kubernetes and OpenShift from an enterprise architecture perspective?",
+    "keywords": [
+      "Kubernetes",
+      "OpenShift",
+      "security",
+      "Operators",
+      "enterprise",
+      "developer experience",
+      "platform"
+    ],
+    "model_answer": "Kubernetes provides the core container orchestration platform. OpenShift is an enterprise Kubernetes platform with additional capabilities and integrated tooling around security, lifecycle management, Operators, developer workflows, networking and image management. An enterprise should evaluate operational requirements, support requirements, security standards and the amount of platform integration it wants to build and maintain.",
+    "follow_up": "When would you choose upstream Kubernetes instead of OpenShift?"
+  },
+  {
+    "id": 5,
+    "category": "Security",
+    "difficulty": "Architect",
+    "question": "How would you secure an enterprise OpenShift platform?",
+    "keywords": [
+      "RBAC",
+      "OAuth",
+      "network policy",
+      "secrets",
+      "least privilege",
+      "image security",
+      "audit",
+      "SCC"
+    ],
+    "model_answer": "I would integrate OpenShift with an enterprise identity provider and enforce least-privilege RBAC. Network policies should isolate workloads. Workload security controls should prevent unauthorized privileged operations. Container images should be scanned and controlled through trusted registries and admission policies where appropriate. Secrets should be managed externally rather than stored as plaintext in Git. Audit logs, monitoring and security alerts should provide visibility into suspicious activity.",
+    "follow_up": "How would you prevent one team's workload from accessing another team's application?"
+  },
+  {
+    "id": 6,
+    "category": "High Availability",
+    "difficulty": "Architect",
+    "question": "How would you design high availability for a production OpenShift environment?",
+    "keywords": [
+      "control plane",
+      "worker nodes",
+      "availability zones",
+      "etcd",
+      "load balancer",
+      "replicas",
+      "failure domain",
+      "monitoring"
+    ],
+    "model_answer": "I would distribute control-plane and worker capacity across appropriate failure domains. The OpenShift API and application ingress paths should have redundant load balancing. etcd requires quorum and should be protected against failure of individual nodes. Applications should use multiple replicas and appropriate topology constraints. Monitoring and alerting should identify node, networking, storage and control-plane failures. High availability should be complemented by tested backup and disaster-recovery procedures.",
+    "follow_up": "What would you do if an entire availability zone failed?"
+  },
+  {
+    "id": 7,
+    "category": "Solution Architecture",
+    "difficulty": "Architect",
+    "question": "How would you design an enterprise container platform for hundreds of development teams?",
+    "keywords": [
+      "platform engineering",
+      "multi-tenancy",
+      "RBAC",
+      "quotas",
+      "self-service",
+      "GitOps",
+      "observability",
+      "governance"
+    ],
+    "model_answer": "I would treat the container platform as an internal developer platform. Teams would receive controlled self-service capabilities while the platform team maintains governance. Namespace boundaries, RBAC, quotas, network policies, standardized CI/CD patterns and observability should be provided as platform capabilities. GitOps should provide repeatability and auditability. Golden paths can reduce developer friction while maintaining security and operational standards.",
+    "follow_up": "How would you balance developer self-service against enterprise governance?"
+  },
+  {
+    "id": 8,
+    "category": "Troubleshooting",
+    "difficulty": "Advanced",
+    "question": "A production OpenShift application suddenly becomes unavailable. How would you troubleshoot it as a Solution Architect?",
+    "keywords": [
+      "incident",
+      "observability",
+      "pods",
+      "services",
+      "routes",
+      "networking",
+      "nodes",
+      "logs"
+    ],
+    "model_answer": "I would first establish the blast radius and determine whether the failure is application-specific, namespace-specific, cluster-wide or regional. I would check monitoring dashboards, recent deployments, pods, services, routes, nodes, networking, resource utilization and logs. I would correlate the issue with recent GitOps or infrastructure changes. The immediate objective would be service stabilization, followed by root-cause analysis and preventive actions.",
+    "follow_up": "If the application pods are healthy but users cannot reach the application, what would you investigate?"
+  },
+  {
+    "id": 9,
+    "category": "Networking",
+    "difficulty": "Advanced",
+    "question": "How would you design networking for an enterprise OpenShift environment?",
+    "keywords": [
+      "networking",
+      "ingress",
+      "egress",
+      "network policy",
+      "load balancer",
+      "DNS",
+      "segmentation",
+      "security"
+    ],
+    "model_answer": "I would design networking around clear ingress, east-west and egress requirements. External traffic should enter through redundant ingress or load-balancing infrastructure. Network policies should control pod-to-pod communication. Egress requirements should be explicitly defined and controlled. DNS, service discovery, IP addressing, firewall rules and integration with enterprise network services should be designed before application onboarding.",
+    "follow_up": "How would you restrict outbound traffic from sensitive namespaces?"
+  },
+  {
+    "id": 10,
+    "category": "Disaster Recovery",
+    "difficulty": "Architect",
+    "question": "How would you design disaster recovery for OpenShift?",
+    "keywords": [
+      "disaster recovery",
+      "backup",
+      "restore",
+      "RPO",
+      "RTO",
+      "multi-region",
+      "data replication",
+      "testing"
+    ],
+    "model_answer": "I would begin by defining business RPO and RTO requirements. Cluster configuration and application state should have reliable backups, while persistent application data requires an appropriate replication strategy. A secondary region or cluster can provide recovery capacity depending on business requirements. GitOps helps recreate desired platform and application configuration. Disaster-recovery procedures must be tested regularly rather than relying only on backup success metrics.",
+    "follow_up": "How would RPO and RTO influence your architecture?"
+  },
+  {
+    "id": 11,
+    "category": "Argo CD",
+    "difficulty": "Advanced",
+    "question": "How does Argo CD detect and remediate configuration drift?",
+    "keywords": [
+      "Argo CD",
+      "drift",
+      "desired state",
+      "reconciliation",
+      "self-healing",
+      "GitOps",
+      "synchronization"
+    ],
+    "model_answer": "Argo CD continuously compares the desired state defined in Git with the live Kubernetes resources. When the states differ, Argo CD reports the application as out of sync. With automated synchronization and self-healing enabled, Argo CD can reconcile the live resources back to the desired state. This provides continuous configuration enforcement.",
+    "follow_up": "When would you intentionally disable automated self-healing?"
+  },
+  {
+    "id": 12,
+    "category": "Secrets",
+    "difficulty": "Architect",
+    "question": "How would you manage secrets in an enterprise GitOps environment?",
+    "keywords": [
+      "secrets",
+      "Vault",
+      "external secrets",
+      "encryption",
+      "GitOps",
+      "RBAC",
+      "rotation",
+      "credentials"
+    ],
+    "model_answer": "I would never commit raw production credentials into Git. Instead, I would integrate GitOps with an external secret-management system such as an enterprise vault solution or an External Secrets pattern. Git should contain references or encrypted representations rather than plaintext credentials. Access should be controlled through workload identity and RBAC, and credentials should support rotation and auditing.",
+    "follow_up": "How would you rotate application credentials without causing downtime?"
+  },
+  {
+    "id": 13,
+    "category": "Observability",
+    "difficulty": "Advanced",
+    "question": "What observability strategy would you implement for a large OpenShift platform?",
+    "keywords": [
+      "monitoring",
+      "logging",
+      "metrics",
+      "tracing",
+      "alerting",
+      "observability",
+      "SLO",
+      "dashboard"
+    ],
+    "model_answer": "I would implement observability across infrastructure, Kubernetes resources and business applications. Metrics should provide capacity and health visibility, logs should support troubleshooting, and distributed tracing should be used for complex application flows where required. Alerting should focus on actionable events and SLOs rather than generating excessive noise. Dashboards should provide different views for platform engineers, application teams and business stakeholders.",
+    "follow_up": "How would you prevent alert fatigue?"
+  },
+  {
+    "id": 14,
+    "category": "Platform Engineering",
+    "difficulty": "Architect",
+    "question": "What is platform engineering and how would you apply it to OpenShift?",
+    "keywords": [
+      "platform engineering",
+      "developer platform",
+      "self-service",
+      "golden path",
+      "automation",
+      "GitOps",
+      "governance",
+      "developer experience"
+    ],
+    "model_answer": "Platform engineering treats infrastructure and platform capabilities as products consumed by development teams. For OpenShift, I would provide standardized golden paths for application deployment, identity, observability, secrets, networking and CI/CD. Self-service should be automated while policy and governance remain centralized. The objective is to improve developer experience without sacrificing enterprise security and reliability.",
+    "follow_up": "What would you include in an OpenShift golden path?"
+  },
+  {
+    "id": 15,
+    "category": "Architecture Trade-offs",
+    "difficulty": "Architect",
+    "question": "How do you explain architecture trade-offs to senior stakeholders?",
+    "keywords": [
+      "trade-off",
+      "cost",
+      "risk",
+      "security",
+      "scalability",
+      "availability",
+      "business requirements",
+      "architecture"
+    ],
+    "model_answer": "I would connect technical decisions to business requirements. For each architecture option, I would explain benefits, limitations, cost, operational complexity, security implications, scalability and failure scenarios. Rather than presenting technology in isolation, I would provide a recommendation with explicit assumptions and risks so stakeholders can make an informed decision.",
+    "follow_up": "How would you communicate a more expensive architecture when the business has a limited budget?"
+  },
+  {
+    "id": 16,
+    "category": "CI/CD",
+    "difficulty": "Advanced",
+    "question": "How would you design CI/CD and GitOps together for OpenShift?",
+    "keywords": [
+      "CI/CD",
+      "GitOps",
+      "Argo CD",
+      "pipeline",
+      "artifact",
+      "container image",
+      "promotion",
+      "deployment"
+    ],
+    "model_answer": "CI should build, test, scan and publish immutable container artifacts. The deployment configuration should be maintained separately through GitOps. After an approved change updates the desired deployment state, Argo CD reconciles the target cluster. Environment promotion should be controlled through Git changes rather than direct cluster manipulation, providing traceability and repeatability.",
+    "follow_up": "Why should CI pipelines generally avoid directly modifying production clusters?"
+  },
+  {
+    "id": 17,
+    "category": "OpenShift Operations",
+    "difficulty": "Advanced",
+    "question": "How would you manage OpenShift cluster upgrades in an enterprise?",
+    "keywords": [
+      "upgrade",
+      "testing",
+      "maintenance",
+      "backup",
+      "compatibility",
+      "staging",
+      "rollback",
+      "automation"
+    ],
+    "model_answer": "I would establish an upgrade lifecycle with supported versions, compatibility validation and maintenance windows. Upgrades should be tested in lower environments before production. Critical workloads and platform configuration should have appropriate backups. The process should include health checks, dependency validation, stakeholder communication and post-upgrade verification. Automation and standard operating procedures should reduce variation across clusters.",
+    "follow_up": "How would you manage upgrades across 50 production clusters?"
+  },
+  {
+    "id": 18,
+    "category": "Leadership",
+    "difficulty": "Architect",
+    "question": "How would you handle disagreement between application teams and the platform engineering team?",
+    "keywords": [
+      "stakeholders",
+      "requirements",
+      "trade-off",
+      "communication",
+      "governance",
+      "risk",
+      "business",
+      "architecture"
+    ],
+    "model_answer": "I would first understand the underlying requirements and constraints on both sides. Then I would make the trade-offs explicit and evaluate the options against business objectives, security, reliability and operational cost. The goal should be to establish a reusable architectural decision rather than resolving only the immediate disagreement. Where appropriate, I would document the decision and assumptions.",
+    "follow_up": "What would you do if the application team insists on a design that violates security policy?"
+  },
+  {
+    "id": 19,
+    "category": "Cost Optimization",
+    "difficulty": "Advanced",
+    "question": "How would you optimize OpenShift platform costs without reducing reliability?",
+    "keywords": [
+      "cost",
+      "capacity",
+      "resource limits",
+      "requests",
+      "autoscaling",
+      "utilization",
+      "rightsizing",
+      "governance"
+    ],
+    "model_answer": "I would begin with visibility into resource requests, limits and actual utilization. Workloads should be rightsized based on observed behavior. Autoscaling can be used where appropriate, while non-production workloads may use scheduling policies to optimize infrastructure usage. Capacity planning should account for reliability requirements and failure domains. Cost optimization should not compromise required availability or performance.",
+    "follow_up": "How would you identify workloads that are over-provisioned?"
+  },
+  {
+    "id": 20,
+    "category": "Interview Strategy",
+    "difficulty": "Architect",
+    "question": "How should a Solution Architect structure an answer to a complex OpenShift architecture question?",
+    "keywords": [
+      "requirements",
+      "architecture",
+      "security",
+      "scalability",
+      "availability",
+      "observability",
+      "disaster recovery",
+      "trade-off"
+    ],
+    "model_answer": "I would structure the answer around requirements, proposed architecture, scalability, high availability, security, networking, observability, disaster recovery, operational model and trade-offs. I would state assumptions clearly and connect technical choices to business requirements. This demonstrates not only product knowledge but also architecture reasoning.",
+    "follow_up": "Give an example of an architecture decision where you had to choose between cost and availability."
+  }
+]

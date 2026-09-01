@@ -1,0 +1,1675 @@
+{% extends "base.html" %}
+
+{% block title %}
+Dashboard | OpenShift AI Interviewer
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+
+.dashboard-page {
+    width: min(1180px, calc(100% - 36px));
+    margin: 0 auto;
+    padding: 42px 0 80px;
+}
+
+
+/* ============================================================
+   HERO
+   ============================================================ */
+
+.dashboard-hero {
+    position: relative;
+    overflow: hidden;
+
+    padding: 42px;
+
+    border-radius: 26px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(15, 23, 42, 0.96),
+            rgba(30, 41, 59, 0.82)
+        );
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    box-shadow:
+        0 25px 70px
+        rgba(0, 0, 0, 0.22);
+
+    margin-bottom: 24px;
+}
+
+
+.dashboard-hero::before {
+    content: "";
+
+    position: absolute;
+
+    width: 350px;
+    height: 350px;
+
+    border-radius: 50%;
+
+    top: -220px;
+    right: -80px;
+
+    background:
+        rgba(99, 102, 241, 0.15);
+
+    filter: blur(45px);
+
+    pointer-events: none;
+}
+
+
+.dashboard-hero::after {
+    content: "";
+
+    position: absolute;
+
+    width: 250px;
+    height: 250px;
+
+    border-radius: 50%;
+
+    bottom: -180px;
+    left: 20%;
+
+    background:
+        rgba(37, 99, 235, 0.10);
+
+    filter: blur(45px);
+
+    pointer-events: none;
+}
+
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+
+    max-width: 760px;
+}
+
+
+.hero-eyebrow {
+    display: inline-flex;
+
+    align-items: center;
+    gap: 8px;
+
+    margin-bottom: 13px;
+
+    color:
+        #60a5fa;
+
+    font-size: 12px;
+
+    font-weight: 900;
+
+    letter-spacing: 1.8px;
+
+    text-transform: uppercase;
+}
+
+
+.hero-eyebrow::before {
+    content: "";
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background:
+        #60a5fa;
+
+    box-shadow:
+        0 0 12px
+        rgba(96, 165, 250, 0.8);
+}
+
+
+.dashboard-hero h1 {
+    margin: 0 0 12px;
+
+    font-size: clamp(32px, 5vw, 52px);
+
+    line-height: 1.08;
+
+    letter-spacing: -1.7px;
+}
+
+
+.dashboard-hero h1 span {
+    background:
+        linear-gradient(
+            90deg,
+            #60a5fa,
+            #a78bfa
+        );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    color: transparent;
+}
+
+
+.hero-description {
+    max-width: 650px;
+
+    margin: 0;
+
+    color:
+        rgba(248, 250, 252, 0.68);
+
+    font-size: 16px;
+
+    line-height: 1.7;
+}
+
+
+.hero-actions {
+    position: relative;
+    z-index: 2;
+
+    display: flex;
+
+    gap: 12px;
+
+    margin-top: 26px;
+
+    flex-wrap: wrap;
+}
+
+
+.hero-btn {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 9px;
+
+    padding:
+        13px 20px;
+
+    border-radius: 11px;
+
+    text-decoration: none;
+
+    font-size: 14px;
+
+    font-weight: 850;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+
+.hero-btn:hover {
+    transform:
+        translateY(-2px);
+}
+
+
+.hero-btn-primary {
+    color: #fff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #7c3aed
+        );
+
+    box-shadow:
+        0 12px 30px
+        rgba(37, 99, 235, 0.25);
+}
+
+
+.hero-btn-primary:hover {
+    box-shadow:
+        0 16px 38px
+        rgba(37, 99, 235, 0.35);
+}
+
+
+.hero-btn-secondary {
+    color: #fff;
+
+    background:
+        rgba(255, 255, 255, 0.06);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.09);
+}
+
+
+/* ============================================================
+   STATS
+   ============================================================ */
+
+.stats-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 15px;
+
+    margin-bottom: 30px;
+}
+
+
+.stat-card {
+    padding: 22px;
+
+    border-radius: 18px;
+
+    background:
+        rgba(15, 23, 42, 0.78);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.07);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+.stat-card:hover {
+    transform:
+        translateY(-3px);
+
+    border-color:
+        rgba(255, 255, 255, 0.14);
+}
+
+
+.stat-top {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 15px;
+}
+
+
+.stat-icon {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 11px;
+
+    background:
+        rgba(99, 102, 241, 0.12);
+
+    font-size: 18px;
+}
+
+
+.stat-label {
+    color:
+        rgba(248, 250, 252, 0.50);
+
+    font-size: 11px;
+
+    font-weight: 850;
+
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
+}
+
+
+.stat-value {
+    display: block;
+
+    font-size: 30px;
+
+    line-height: 1;
+
+    font-weight: 900;
+
+    letter-spacing: -1px;
+}
+
+
+.stat-subtitle {
+    margin-top: 7px;
+
+    color:
+        rgba(248, 250, 252, 0.42);
+
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   SECTION HEADER
+   ============================================================ */
+
+.section-header {
+    display: flex;
+
+    align-items: flex-end;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin:
+        42px 0 18px;
+}
+
+
+.section-title {
+    margin: 0;
+
+    font-size: 25px;
+
+    letter-spacing: -0.5px;
+}
+
+
+.section-description {
+    margin: 4px 0 0;
+
+    color:
+        rgba(248, 250, 252, 0.52);
+
+    font-size: 13px;
+}
+
+
+.section-link {
+    color:
+        #93c5fd;
+
+    text-decoration: none;
+
+    font-size: 13px;
+
+    font-weight: 800;
+}
+
+
+.section-link:hover {
+    color: #fff;
+}
+
+
+/* ============================================================
+   INTERVIEW CARD
+   ============================================================ */
+
+.interview-card {
+    position: relative;
+
+    overflow: hidden;
+
+    padding: 30px;
+
+    border-radius: 22px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(15, 23, 42, 0.92),
+            rgba(17, 24, 39, 0.85)
+        );
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+}
+
+
+.interview-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 180px;
+    height: 180px;
+
+    border-radius: 50%;
+
+    top: -110px;
+    right: -40px;
+
+    background:
+        rgba(124, 58, 237, 0.12);
+
+    filter: blur(30px);
+}
+
+
+.interview-card-top {
+    position: relative;
+    z-index: 2;
+
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 25px;
+}
+
+
+.interview-icon {
+    width: 55px;
+    height: 55px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 15px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #7c3aed
+        );
+
+    font-size: 25px;
+
+    box-shadow:
+        0 10px 30px
+        rgba(37, 99, 235, 0.25);
+}
+
+
+.interview-card h3 {
+    margin: 0 0 6px;
+
+    font-size: 23px;
+}
+
+
+.interview-card p {
+    margin: 0;
+
+    color:
+        rgba(248, 250, 252, 0.58);
+
+    font-size: 13px;
+
+    line-height: 1.6;
+}
+
+
+.interview-status {
+    padding:
+        7px 11px;
+
+    border-radius: 999px;
+
+    background:
+        rgba(34, 197, 94, 0.10);
+
+    border:
+        1px solid
+        rgba(34, 197, 94, 0.16);
+
+    color:
+        #86efac;
+
+    font-size: 11px;
+
+    font-weight: 850;
+
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   PROGRESS
+   ============================================================ */
+
+.progress-area {
+    margin-top: 25px;
+}
+
+
+.progress-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-bottom: 9px;
+
+    font-size: 12px;
+
+    font-weight: 800;
+}
+
+
+.progress-header span:last-child {
+    color:
+        #93c5fd;
+}
+
+
+.progress-track {
+    width: 100%;
+
+    height: 9px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background:
+        rgba(255, 255, 255, 0.07);
+}
+
+
+.progress-fill {
+    height: 100%;
+
+    width: {{ progress|default(0) }}%;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(
+            90deg,
+            #2563eb,
+            #7c3aed
+        );
+
+    transition:
+        width 0.4s ease;
+}
+
+
+/* ============================================================
+   INTERVIEW META
+   ============================================================ */
+
+.interview-meta {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 12px;
+
+    margin-top: 20px;
+}
+
+
+.meta-box {
+    padding: 15px;
+
+    border-radius: 13px;
+
+    background:
+        rgba(255,255,255,0.035);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.05);
+}
+
+
+.meta-label {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color:
+        rgba(248,250,252,0.42);
+
+    font-size: 10px;
+
+    font-weight: 850;
+
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
+}
+
+
+.meta-value {
+    font-size: 14px;
+
+    font-weight: 800;
+}
+
+
+/* ============================================================
+   DOMAIN CARDS
+   ============================================================ */
+
+.domain-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 15px;
+}
+
+
+.domain-card {
+    position: relative;
+
+    overflow: hidden;
+
+    min-height: 155px;
+
+    padding: 22px;
+
+    border-radius: 18px;
+
+    background:
+        rgba(15, 23, 42, 0.76);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.07);
+
+    text-decoration: none;
+
+    transition:
+        transform 0.22s ease,
+        border-color 0.22s ease,
+        background 0.22s ease;
+}
+
+
+.domain-card:hover {
+    transform:
+        translateY(-4px);
+
+    background:
+        rgba(30, 41, 59, 0.90);
+
+    border-color:
+        rgba(147, 197, 253, 0.20);
+}
+
+
+.domain-icon {
+    width: 43px;
+    height: 43px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 16px;
+
+    border-radius: 12px;
+
+    background:
+        rgba(255,255,255,0.06);
+
+    font-size: 20px;
+}
+
+
+.domain-card h3 {
+    margin: 0 0 5px;
+
+    font-size: 16px;
+}
+
+
+.domain-card p {
+    margin: 0;
+
+    color:
+        rgba(248,250,252,0.47);
+
+    font-size: 12px;
+
+    line-height: 1.55;
+}
+
+
+.domain-arrow {
+    position: absolute;
+
+    right: 19px;
+    bottom: 17px;
+
+    color:
+        rgba(248,250,252,0.35);
+
+    font-size: 16px;
+
+    transition:
+        transform 0.2s ease,
+        color 0.2s ease;
+}
+
+
+.domain-card:hover .domain-arrow {
+    transform:
+        translateX(4px);
+
+    color: #fff;
+}
+
+
+/* ============================================================
+   QUESTION BANK
+   ============================================================ */
+
+.question-bank {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 12px;
+}
+
+
+.question-preview {
+    padding: 17px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(15,23,42,0.70);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.06);
+}
+
+
+.question-preview-top {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    margin-bottom: 9px;
+}
+
+
+.question-number {
+    color:
+        #93c5fd;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+
+.question-category {
+    color:
+        rgba(248,250,252,0.42);
+
+    font-size: 10px;
+
+    font-weight: 800;
+}
+
+
+.question-preview-text {
+    margin: 0;
+
+    font-size: 13px;
+
+    font-weight: 650;
+
+    line-height: 1.55;
+}
+
+
+/* ============================================================
+   EMPTY / NO QUESTIONS
+   ============================================================ */
+
+.empty-state {
+    padding: 40px;
+
+    text-align: center;
+
+    border-radius: 18px;
+
+    background:
+        rgba(15,23,42,0.70);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.07);
+}
+
+
+.empty-state-icon {
+    font-size: 35px;
+
+    margin-bottom: 10px;
+}
+
+
+.empty-state h3 {
+    margin: 0 0 5px;
+}
+
+
+.empty-state p {
+    margin: 0;
+
+    color:
+        rgba(248,250,252,0.50);
+
+    font-size: 13px;
+}
+
+
+/* ============================================================
+   FOOTER NOTE
+   ============================================================ */
+
+.dashboard-note {
+    margin-top: 35px;
+
+    padding: 18px 20px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(59,130,246,0.06);
+
+    border:
+        1px solid
+        rgba(59,130,246,0.10);
+
+    color:
+        rgba(248,250,252,0.55);
+
+    font-size: 12px;
+
+    line-height: 1.6;
+}
+
+
+.dashboard-note strong {
+    color:
+        rgba(248,250,252,0.85);
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 950px) {
+
+    .stats-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+
+    .domain-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    .dashboard-page {
+        width:
+            calc(100% - 24px);
+
+        padding-top: 25px;
+    }
+
+
+    .dashboard-hero {
+        padding: 28px 23px;
+    }
+
+
+    .dashboard-hero h1 {
+        font-size: 34px;
+    }
+
+
+    .interview-card {
+        padding: 23px;
+    }
+
+
+    .interview-card-top {
+        flex-direction: column;
+    }
+
+
+    .interview-status {
+        align-self: flex-start;
+    }
+
+
+    .interview-meta {
+        grid-template-columns: 1fr;
+    }
+
+
+    .question-bank {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+
+@media (max-width: 520px) {
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+
+    .domain-grid {
+        grid-template-columns: 1fr;
+    }
+
+
+    .hero-actions {
+        flex-direction: column;
+    }
+
+
+    .hero-btn {
+        width: 100%;
+    }
+
+
+    .section-header {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+}
+
+</style>
+
+
+<div class="dashboard-page">
+
+
+    <!-- ========================================================
+         HERO
+         ======================================================== -->
+
+    <section class="dashboard-hero">
+
+        <div class="hero-content">
+
+            <div class="hero-eyebrow">
+                ARCHITECT PREPARATION
+            </div>
+
+
+            <h1>
+                Welcome back,
+                <span>
+                    {{ user.name|default("Candidate") }}
+                </span>
+            </h1>
+
+
+            <p class="hero-description">
+
+                Build confidence for your next
+                OpenShift Solution Architect interview.
+                Practice enterprise architecture,
+                Kubernetes, GitOps, security and
+                operational scenarios.
+
+            </p>
+
+
+            <div class="hero-actions">
+
+                <a
+                    href="{{ url_for('interview') }}"
+                    class="hero-btn hero-btn-primary"
+                >
+                    🚀 Start Mock Interview
+                </a>
+
+
+                <a
+                    href="{{ url_for('result') }}"
+                    class="hero-btn hero-btn-secondary"
+                >
+                    📊 View Results
+                </a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ========================================================
+         STATISTICS
+         ======================================================== -->
+
+    <div class="stats-grid">
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+
+                <span class="stat-label">
+                    Question Bank
+                </span>
+
+                <div class="stat-icon">
+                    📚
+                </div>
+
+            </div>
+
+            <span class="stat-value">
+                {{ total_questions|default(0) }}
+            </span>
+
+            <div class="stat-subtitle">
+                Interview questions available
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+
+                <span class="stat-label">
+                    Answered
+                </span>
+
+                <div class="stat-icon">
+                    ✍️
+                </div>
+
+            </div>
+
+            <span class="stat-value">
+                {{ answered_questions|default(0) }}
+            </span>
+
+            <div class="stat-subtitle">
+                Questions answered
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+
+                <span class="stat-label">
+                    Progress
+                </span>
+
+                <div class="stat-icon">
+                    📈
+                </div>
+
+            </div>
+
+            <span class="stat-value">
+                {{ progress|default(0) }}%
+            </span>
+
+            <div class="stat-subtitle">
+                Current interview progress
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+
+                <span class="stat-label">
+                    Score
+                </span>
+
+                <div class="stat-icon">
+                    🏆
+                </div>
+
+            </div>
+
+            <span class="stat-value">
+                {{ score|default(0) }}%
+            </span>
+
+            <div class="stat-subtitle">
+                Current interview score
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- ========================================================
+         MOCK INTERVIEW
+         ======================================================== -->
+
+    <div class="section-header">
+
+        <div>
+
+            <h2 class="section-title">
+                Start a Mock Interview
+            </h2>
+
+            <p class="section-description">
+                Simulate a professional OpenShift
+                Solution Architect interview.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <section class="interview-card">
+
+
+        <div class="interview-card-top">
+
+
+            <div
+                style="
+                    display:flex;
+                    align-items:flex-start;
+                    gap:17px;
+                "
+            >
+
+                <div class="interview-icon">
+                    🤖
+                </div>
+
+
+                <div>
+
+                    <h3>
+                        OpenShift AI Interview
+                    </h3>
+
+                    <p>
+                        Test your knowledge across
+                        architecture, GitOps, security,
+                        Kubernetes and enterprise
+                        operations.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="interview-status">
+                ● READY
+            </div>
+
+
+        </div>
+
+
+        <div class="progress-area">
+
+            <div class="progress-header">
+
+                <span>
+                    Preparation Progress
+                </span>
+
+                <span>
+                    {{ progress|default(0) }}%
+                </span>
+
+            </div>
+
+
+            <div class="progress-track">
+
+                <div
+                    class="progress-fill"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <div class="interview-meta">
+
+
+            <div class="meta-box">
+
+                <span class="meta-label">
+                    Questions
+                </span>
+
+                <span class="meta-value">
+                    {{ total_questions|default(0) }}
+                </span>
+
+            </div>
+
+
+            <div class="meta-box">
+
+                <span class="meta-label">
+                    Answered
+                </span>
+
+                <span class="meta-value">
+                    {{ answered_questions|default(0) }}
+                </span>
+
+            </div>
+
+
+            <div class="meta-box">
+
+                <span class="meta-label">
+                    Score
+                </span>
+
+                <span class="meta-value">
+                    {{ score|default(0) }}%
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <div
+            style="
+                margin-top:22px;
+                display:flex;
+                justify-content:flex-end;
+            "
+        >
+
+            <a
+                href="{{ url_for('interview') }}"
+                class="hero-btn hero-btn-primary"
+            >
+                Begin Interview →
+            </a>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- ========================================================
+         DOMAINS
+         ======================================================== -->
+
+    <div class="section-header">
+
+        <div>
+
+            <h2 class="section-title">
+                Interview Domains
+            </h2>
+
+            <p class="section-description">
+                Focus your preparation on the areas
+                most important for enterprise architecture.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="domain-grid">
+
+
+        <a
+            href="{{ url_for('interview') }}"
+            class="domain-card"
+        >
+
+            <div class="domain-icon">
+                🏗️
+            </div>
+
+            <h3>
+                Architecture
+            </h3>
+
+            <p>
+                Enterprise design, scalability,
+                availability and architecture decisions.
+            </p>
+
+            <span class="domain-arrow">
+                →
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('interview') }}"
+            class="domain-card"
+        >
+
+            <div class="domain-icon">
+                🔄
+            </div>
+
+            <h3>
+                GitOps
+            </h3>
+
+            <p>
+                Argo CD, ApplicationSets,
+                deployment strategies and automation.
+            </p>
+
+            <span class="domain-arrow">
+                →
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('interview') }}"
+            class="domain-card"
+        >
+
+            <div class="domain-icon">
+                🔐
+            </div>
+
+            <h3>
+                Security
+            </h3>
+
+            <p>
+                RBAC, secrets, identity,
+                compliance and zero-trust principles.
+            </p>
+
+            <span class="domain-arrow">
+                →
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('interview') }}"
+            class="domain-card"
+        >
+
+            <div class="domain-icon">
+                ☸️
+            </div>
+
+            <h3>
+                Kubernetes
+            </h3>
+
+            <p>
+                Workloads, networking, storage,
+                scheduling and cluster operations.
+            </p>
+
+            <span class="domain-arrow">
+                →
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('interview') }}"
+            class="domain-card"
+        >
+
+            <div class="domain-icon">
+                🔴
+            </div>
+
+            <h3>
+                OpenShift
+            </h3>
+
+            <p>
+                Enterprise OpenShift platform,
+                operators, projects and cluster services.
+            </p>
+
+            <span class="domain-arrow">
+                →
+            </span>
+
+        </a>
+
+
+        <a
+            href="{{ url_for('interview') }}"
+            class="domain-card"
+        >
+
+            <div class="domain-icon">
+                📊
+            </div>
+
+            <h3>
+                Operations
+            </h3>
+
+            <p>
+                Monitoring, observability,
+                disaster recovery and troubleshooting.
+            </p>
+
+            <span class="domain-arrow">
+                →
+            </span>
+
+        </a>
+
+
+    </div>
+
+
+    <!-- ========================================================
+         QUESTION BANK PREVIEW
+         ======================================================== -->
+
+    <div class="section-header">
+
+        <div>
+
+            <h2 class="section-title">
+                Question Bank
+            </h2>
+
+            <p class="section-description">
+                Preview some of the interview topics
+                available in your question bank.
+            </p>
+
+        </div>
+
+
+        <a
+            href="{{ url_for('interview') }}"
+            class="section-link"
+        >
+            Practice now →
+        </a>
+
+    </div>
+
+
+    {% if questions %}
+
+    <div class="question-bank">
+
+        {% for q in questions[:6] %}
+
+        <div class="question-preview">
+
+
+            <div class="question-preview-top">
+
+                <span class="question-number">
+                    QUESTION {{ loop.index }}
+                </span>
+
+
+                <span class="question-category">
+
+                    {{ q.domain|default(
+                        q.category|default("OpenShift")
+                    ) }}
+
+                </span>
+
+            </div>
+
+
+            <p class="question-preview-text">
+
+                {{ q.question|default(
+                    q.text|default(
+                        "Interview question"
+                    )
+                ) }}
+
+            </p>
+
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+
+        <div class="empty-state-icon">
+            📚
+        </div>
+
+        <h3>
+            No Questions Loaded
+        </h3>
+
+        <p>
+            Check your questions.json file.
+        </p>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ========================================================
+         PREPARATION TIP
+         ======================================================== -->
+
+    <div class="dashboard-note">
+
+        <span style="font-size:20px;">
+            💡
+        </span>
+
+        <div>
+
+            <strong>
+                Architect Tip:
+            </strong>
+
+            Structure your interview answers around
+            requirements, architecture decisions,
+            scalability, security, observability,
+            high availability and trade-offs.
+
+        </div>
+
+    </div>
+
+
+</div>
+
+{% endblock %}

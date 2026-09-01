@@ -1,0 +1,1149 @@
+{% extends "base.html" %}
+
+{% block title %}
+OpenShift AI Interviewer
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+.interview-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 30px 20px 80px;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.interview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 25px;
+
+    margin-bottom: 25px;
+}
+
+.interview-header h1 {
+    margin: 8px 0;
+    font-size: 34px;
+}
+
+.interview-header p {
+    margin: 0;
+    opacity: 0.75;
+    line-height: 1.6;
+}
+
+.eyebrow {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.8px;
+    opacity: 0.7;
+}
+
+.reset-link {
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* ============================================================
+   SETUP
+   ============================================================ */
+
+.interview-start-form {
+    max-width: 650px;
+    margin: 35px auto;
+    padding: 30px;
+
+    border-radius: 20px;
+
+    background: rgba(15, 23, 42, 0.75);
+
+    border: 1px solid rgba(255,255,255,0.1);
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,0.25);
+}
+
+.form-group {
+    margin-bottom: 22px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 13px 14px;
+
+    border-radius: 10px;
+
+    border: 1px solid rgba(255,255,255,0.15);
+
+    background: rgba(255,255,255,0.05);
+
+    color: inherit;
+
+    font-size: 15px;
+}
+
+.start-interview-btn {
+    width: 100%;
+
+    padding: 15px;
+
+    border: 0;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    font-size: 16px;
+
+    font-weight: 800;
+}
+
+/* ============================================================
+   PROGRESS
+   ============================================================ */
+
+.interview-progress-card {
+    margin-bottom: 25px;
+
+    padding: 18px 20px;
+
+    border-radius: 16px;
+
+    background: rgba(15, 23, 42, 0.7);
+
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+
+    margin-bottom: 10px;
+
+    font-size: 14px;
+
+    font-weight: 700;
+}
+
+.progress-bar {
+    width: 100%;
+
+    height: 8px;
+
+    border-radius: 10px;
+
+    background: rgba(255,255,255,0.1);
+
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+
+    border-radius: inherit;
+
+    background: #f5c542;
+
+    transition: width 0.3s ease;
+}
+
+/* ============================================================
+   QUESTION CARD
+   ============================================================ */
+
+.question-card {
+    padding: 30px;
+
+    border-radius: 22px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(15,23,42,0.95),
+            rgba(10,15,30,0.95)
+        );
+
+    border: 1px solid rgba(255,255,255,0.1);
+
+    box-shadow:
+        0 25px 70px rgba(0,0,0,0.25);
+
+    margin-bottom: 25px;
+}
+
+.question-meta {
+    display: flex;
+    gap: 10px;
+
+    margin-bottom: 20px;
+}
+
+.domain-badge,
+.difficulty-badge {
+    display: inline-block;
+
+    padding: 7px 11px;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+
+    font-weight: 800;
+
+    background: rgba(255,255,255,0.08);
+}
+
+.question-number {
+    margin-bottom: 12px;
+
+    font-size: 12px;
+
+    letter-spacing: 1.5px;
+
+    font-weight: 800;
+
+    opacity: 0.6;
+}
+
+.question-text {
+    font-size: 25px;
+
+    line-height: 1.5;
+
+    margin: 0 0 28px;
+}
+
+/* ============================================================
+   OPTIONS
+   ============================================================ */
+
+.options-container {
+    display: grid;
+
+    gap: 12px;
+
+    margin-bottom: 25px;
+}
+
+.option-item {
+    display: flex;
+
+    gap: 12px;
+
+    align-items: flex-start;
+
+    padding: 14px;
+
+    border-radius: 12px;
+
+    border: 1px solid rgba(255,255,255,0.1);
+
+    cursor: pointer;
+}
+
+.option-item:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.option-item input {
+    margin-top: 4px;
+}
+
+/* ============================================================
+   ANSWER
+   ============================================================ */
+
+.answer-section {
+    margin-top: 25px;
+}
+
+.answer-section > label {
+    display: block;
+
+    margin-bottom: 10px;
+
+    font-size: 18px;
+
+    font-weight: 800;
+}
+
+#answer {
+    width: 100%;
+
+    min-height: 220px;
+
+    resize: vertical;
+
+    box-sizing: border-box;
+
+    padding: 17px;
+
+    border-radius: 14px;
+
+    border: 1px solid rgba(255,255,255,0.14);
+
+    background: rgba(2,6,23,0.8);
+
+    color: inherit;
+
+    font-family: inherit;
+
+    font-size: 15px;
+
+    line-height: 1.7;
+
+    outline: none;
+}
+
+#answer:focus {
+    border-color: #f5c542;
+
+    box-shadow:
+        0 0 0 3px rgba(245,197,66,0.12);
+}
+
+.answer-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    margin-top: 15px;
+}
+
+.secondary-btn,
+.evaluate-btn,
+.next-question-btn {
+    padding: 12px 18px;
+
+    border-radius: 10px;
+
+    border: 0;
+
+    cursor: pointer;
+
+    font-weight: 800;
+
+    font-size: 14px;
+}
+
+.secondary-btn {
+    background: rgba(255,255,255,0.08);
+
+    color: inherit;
+}
+
+.evaluate-btn {
+    background: #f5c542;
+
+    color: #111827;
+}
+
+.evaluate-btn:hover,
+.next-question-btn:hover,
+.start-interview-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* ============================================================
+   EVALUATION
+   ============================================================ */
+
+.evaluation-card {
+    padding: 28px;
+
+    margin-bottom: 25px;
+
+    border-radius: 20px;
+
+    background: rgba(15,23,42,0.9);
+
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.evaluation-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 20px;
+
+    margin-bottom: 25px;
+}
+
+.evaluation-header h2 {
+    margin: 7px 0 0;
+
+    font-size: 28px;
+}
+
+.evaluation-score {
+    font-size: 36px;
+
+    font-weight: 900;
+}
+
+.evaluation-feedback,
+.model-answer,
+.explanation {
+    padding: 18px;
+
+    margin-top: 15px;
+
+    border-radius: 14px;
+
+    background: rgba(255,255,255,0.04);
+}
+
+.evaluation-card h3 {
+    margin-top: 0;
+}
+
+.evaluation-card p {
+    line-height: 1.7;
+}
+
+.next-question-form {
+    margin-top: 25px;
+
+    display: flex;
+
+    justify-content: flex-end;
+}
+
+.next-question-btn {
+    padding: 14px 22px;
+
+    background: #f5c542;
+
+    color: #111827;
+}
+
+/* ============================================================
+   INFO
+   ============================================================ */
+
+.interview-info {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 15px;
+
+    margin-top: 20px;
+}
+
+.interview-info > div {
+    padding: 17px;
+
+    border-radius: 14px;
+
+    background: rgba(255,255,255,0.04);
+
+    border: 1px solid rgba(255,255,255,0.07);
+}
+
+.interview-info strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 12px;
+
+    opacity: 0.6;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 700px) {
+
+    .interview-header {
+        flex-direction: column;
+    }
+
+    .question-card {
+        padding: 20px;
+    }
+
+    .question-text {
+        font-size: 21px;
+    }
+
+    .answer-actions {
+        flex-direction: column;
+    }
+
+    .answer-actions button,
+    .answer-actions form {
+        width: 100%;
+    }
+
+    .evaluate-btn,
+    .secondary-btn {
+        width: 100%;
+    }
+
+    .interview-info {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+
+
+<div class="interview-page">
+
+
+{% if not question %}
+
+<!-- ============================================================
+     SETUP SCREEN
+     ============================================================ -->
+
+<div class="interview-header">
+
+    <div>
+
+        <span class="eyebrow">
+            AI INTERVIEWER
+        </span>
+
+        <h1>
+            Start Your Interview
+        </h1>
+
+        <p>
+            Select your interview preferences
+            and begin your OpenShift architecture
+            interview.
+        </p>
+
+    </div>
+
+</div>
+
+
+<form
+    action="{{ url_for('start_interview') }}"
+    method="POST"
+    class="interview-start-form"
+>
+
+
+    <!-- MODE -->
+
+    <div class="form-group">
+
+        <label for="interview_mode">
+            Interview Mode
+        </label>
+
+        <select
+            id="interview_mode"
+            name="interview_mode"
+        >
+
+            <option value="mock">
+                Mock Interview
+            </option>
+
+            <option value="practice">
+                Practice
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <!-- DOMAIN -->
+
+    <div class="form-group">
+
+        <label for="domain">
+            Domain
+        </label>
+
+        <select
+            id="domain"
+            name="domain"
+            required
+        >
+
+            <option value="all">
+                All Domains
+            </option>
+
+            {% for domain in domains %}
+
+            <option value="{{ domain }}">
+                {{ domain }}
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+
+    <!-- DIFFICULTY -->
+
+    <div class="form-group">
+
+        <label for="difficulty">
+            Difficulty
+        </label>
+
+        <select
+            id="difficulty"
+            name="difficulty"
+            required
+        >
+
+            <option value="all">
+                All Levels
+            </option>
+
+            {% for difficulty in difficulties %}
+
+            <option value="{{ difficulty }}">
+                {{ difficulty }}
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+
+    <!-- QUESTION COUNT -->
+
+    <div class="form-group">
+
+        <label for="question_count">
+            Number of Questions
+        </label>
+
+        <select
+            id="question_count"
+            name="question_count"
+            required
+        >
+
+            {% for count in question_count_options %}
+
+            <option value="{{ count }}">
+                {{ count }} Questions
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+
+    <button
+        type="submit"
+        class="start-interview-btn"
+    >
+        Start Interview →
+    </button>
+
+</form>
+
+
+{% else %}
+
+
+<!-- ============================================================
+     ACTIVE INTERVIEW HEADER
+     ============================================================ -->
+
+<div class="interview-header">
+
+    <div>
+
+        <span class="eyebrow">
+
+            {{ interview_mode|default(
+                "Mock Interview"
+            )|upper }}
+
+        </span>
+
+        <h1>
+            OpenShift AI Interview
+        </h1>
+
+        <p>
+            Answer the question below as if
+            you were explaining your solution
+            to a senior interviewer.
+        </p>
+
+    </div>
+
+
+    <a
+        href="{{ url_for('reset_interview') }}"
+        class="reset-link"
+    >
+        ↻ Reset
+    </a>
+
+</div>
+
+
+<!-- ============================================================
+     PROGRESS
+     ============================================================ -->
+
+<div class="interview-progress-card">
+
+    <div class="progress-info">
+
+        <span>
+            Question
+            {{ question_number }}
+            of
+            {{ total_questions }}
+        </span>
+
+        <span>
+            {{ progress }}%
+        </span>
+
+    </div>
+
+
+    <div class="progress-bar">
+
+        <div
+            class="progress-fill"
+            style="width: {{ progress }}%;"
+        ></div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     QUESTION CARD
+     ============================================================ -->
+
+<div class="question-card">
+
+
+    <div class="question-meta">
+
+        <span class="domain-badge">
+
+            {{ question.domain
+                |default(question.category)
+            }}
+
+        </span>
+
+
+        <span class="difficulty-badge">
+
+            {{ question.difficulty
+                |default("Intermediate")
+            }}
+
+        </span>
+
+    </div>
+
+
+    <div class="question-number">
+
+        QUESTION {{ question_number }}
+
+    </div>
+
+
+    <h2 class="question-text">
+
+        {{ question.question }}
+
+    </h2>
+
+
+    <!-- OPTIONS -->
+
+    {% if question.options %}
+
+    <div class="options-container">
+
+        {% for option in question.options %}
+
+        {% if option is mapping %}
+
+        <label class="option-item">
+
+            <input
+                type="radio"
+                name="answer_option"
+                value="{{ option.value
+                    |default(option.text)
+                }}"
+                onclick="selectOption(this)"
+            >
+
+            <span>
+
+                {{ option.text
+                    |default(option.label)
+                    |default(option.value)
+                }}
+
+            </span>
+
+        </label>
+
+        {% else %}
+
+        <label class="option-item">
+
+            <input
+                type="radio"
+                name="answer_option"
+                value="{{ option }}"
+                onclick="selectOption(this)"
+            >
+
+            <span>
+                {{ option }}
+            </span>
+
+        </label>
+
+        {% endif %}
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ========================================================
+         ANSWER FORM
+         ======================================================== -->
+
+    <form
+        action="{{ url_for('evaluate_answer') }}"
+        method="POST"
+        id="evaluateForm"
+    >
+
+        <input
+            type="hidden"
+            name="question_index"
+            value="{{ question_index }}"
+        >
+
+
+        <div class="answer-section">
+
+            <label for="answer">
+                Your Answer
+            </label>
+
+
+            <textarea
+                id="answer"
+                name="answer"
+                rows="10"
+                placeholder="Explain your answer clearly. Include architecture, implementation, security, scalability, reliability and trade-offs..."
+            >{{ saved_answer|default("") }}</textarea>
+
+
+            <div class="answer-actions">
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="clearAnswer()"
+                >
+                    Clear
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="evaluate-btn"
+                >
+                    🔍 Evaluate Answer →
+                </button>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<!-- ============================================================
+     EVALUATION
+     ============================================================ -->
+
+{% if evaluation %}
+
+<div class="evaluation-card">
+
+
+    <div class="evaluation-header">
+
+        <div>
+
+            <span class="eyebrow">
+                AI EVALUATION
+            </span>
+
+            <h2>
+                {{ evaluation.verdict }}
+            </h2>
+
+        </div>
+
+
+        <div class="evaluation-score">
+
+            {{ evaluation.score }}%
+
+        </div>
+
+    </div>
+
+
+    <div class="evaluation-feedback">
+
+        <h3>
+            💡 Feedback
+        </h3>
+
+        <p>
+            {{ evaluation.feedback }}
+        </p>
+
+    </div>
+
+
+    {% if evaluation.model_answer %}
+
+    <div class="model-answer">
+
+        <h3>
+            📘 Expected / Model Answer
+        </h3>
+
+        <p>
+            {{ evaluation.model_answer }}
+        </p>
+
+    </div>
+
+    {% endif %}
+
+
+    {% if evaluation.explanation %}
+
+    <div class="explanation">
+
+        <h3>
+            📝 Explanation
+        </h3>
+
+        <p>
+            {{ evaluation.explanation }}
+        </p>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ========================================================
+         NEXT QUESTION
+         ======================================================== -->
+
+    <form
+        action="{{ url_for('submit_answer') }}"
+        method="POST"
+        class="next-question-form"
+    >
+
+        <input
+            type="hidden"
+            name="question_index"
+            value="{{ question_index }}"
+        >
+
+
+        <input
+            type="hidden"
+            name="answer"
+            value="{{ saved_answer }}"
+        >
+
+
+        {% if question_index + 1 < total_questions %}
+
+        <button
+            type="submit"
+            class="next-question-btn"
+        >
+            Next Question →
+        </button>
+
+        {% else %}
+
+        <button
+            type="submit"
+            class="next-question-btn"
+        >
+            Finish Interview →
+        </button>
+
+        {% endif %}
+
+    </form>
+
+
+</div>
+
+{% endif %}
+
+
+<!-- ============================================================
+     INTERVIEW INFORMATION
+     ============================================================ -->
+
+<div class="interview-info">
+
+
+    <div>
+
+        <strong>
+            Domain
+        </strong>
+
+        <span>
+            {{ interview_domain
+                |default("All Domains")
+            }}
+        </span>
+
+    </div>
+
+
+    <div>
+
+        <strong>
+            Difficulty
+        </strong>
+
+        <span>
+            {{ interview_difficulty
+                |default("All Levels")
+            }}
+        </span>
+
+    </div>
+
+
+    <div>
+
+        <strong>
+            Answered
+        </strong>
+
+        <span>
+            {{ answered_questions }}
+            /
+            {{ total_questions }}
+        </span>
+
+    </div>
+
+
+</div>
+
+
+{% endif %}
+
+</div>
+
+
+<script>
+
+function clearAnswer() {
+
+    const textarea =
+        document.getElementById(
+            "answer"
+        );
+
+    if (textarea) {
+
+        textarea.value = "";
+
+        textarea.focus();
+
+    }
+
+}
+
+
+function selectOption(input) {
+
+    const textarea =
+        document.getElementById(
+            "answer"
+        );
+
+    if (!textarea) {
+        return;
+    }
+
+    textarea.value =
+        input.value;
+
+}
+
+</script>
+
+{% endblock %}
