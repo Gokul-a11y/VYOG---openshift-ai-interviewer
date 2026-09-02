@@ -283,39 +283,30 @@ def normalize_question(question, index=0):
 
 
 def calculate_score():
+    answers = session.get("answers", {})
+    active_indices = get_active_indices()
 
-    answers = session.get(
-        "answers",
-        {}
-    )
-
-    total = len(QUESTIONS)
+    total = len(active_indices)
 
     if total == 0:
-
         return 0
 
     correct = 0
 
-    for key, user_answer in answers.items():
+    for original_index in active_indices:
+        user_answer = answers.get(
+            str(original_index),
+            "",
+        )
 
-        try:
-
-            index = int(key)
-
-        except (TypeError, ValueError):
-
-            continue
-
-        question = get_question(index)
+        question = get_question(original_index)
 
         if not question:
-
             continue
 
         question = normalize_question(
             question,
-            index
+            original_index,
         )
 
         expected = str(
@@ -327,7 +318,6 @@ def calculate_score():
         ).strip().lower()
 
         if expected and actual == expected:
-
             correct += 1
 
     return round(
@@ -439,7 +429,9 @@ def google_callback():
             ),
         }
 
-        # Start a fresh interview.
+        # After login, show the interview setup screen.
+        session.pop("interview_questions", None)
+        session.pop("question_count", None)
         session["current_question"] = 0
         session["answers"] = {}
         session["score"] = 0
@@ -578,6 +570,207 @@ def get_question_count_options():
 
 
 # ============================================================
+# INTERVIEW SETUP HELPERS
+# ============================================================
+
+def get_domains():
+    """Return unique domains/categories in the question bank."""
+    values = []
+
+    for q in QUESTIONS:
+        normalized = normalize_question(q)
+        value = str(
+            normalized.get("domain")
+            or normalized.get("category")
+            or "OpenShift"
+        ).strip()
+
+        if value and value not in values:
+            values.append(value)
+
+    return values or ["OpenShift"]
+
+
+def get_difficulties():
+    """Return unique difficulty levels in the question bank."""
+    values = []
+
+    for q in QUESTIONS:
+        if isinstance(q, dict):
+            value = str(
+                q.get("difficulty")
+                or q.get("level")
+                or q.get("difficulty_level")
+                or ""
+            ).strip()
+
+            if value and value not in values:
+                values.append(value)
+
+    # If the JSON has no difficulty field, still provide useful
+    # setup choices. Existing questions remain available under All Levels.
+    return values or ["Easy", "Intermediate", "Hard"]
+
+
+def get_question_count_options(available=None):
+    """Return sensible question-count choices for the setup screen."""
+    if available is None:
+        available = len(QUESTIONS)
+
+    available = max(0, int(available))
+
+    if available == 0:
+        return [1]
+
+    standard = [5, 10, 15, 20]
+    options = [n for n in standard if n <= available]
+
+    # For small filtered result sets, expose every possible count.
+    if available < 5:
+        return list(range(1, available + 1))
+
+    return options or [available]
+
+
+def question_matches(question, domain="all", difficulty="all"):
+    """Check whether one question matches the selected filters."""
+    normalized = normalize_question(question)
+
+    selected_domain = str(domain or "all").strip().lower()
+    selected_difficulty = str(difficulty or "all").strip().lower()
+
+    actual_domain = str(
+        normalized.get("domain")
+        or normalized.get("category")
+        or "OpenShift"
+    ).strip().lower()
+
+    if isinstance(question, dict):
+        actual_difficulty = str(
+            question.get("difficulty")
+            or question.get("level")
+            or question.get("difficulty_level")
+            or ""
+        ).strip().lower()
+    else:
+        actual_difficulty = ""
+
+    domain_ok = (
+        selected_domain in ("", "all")
+        or actual_domain == selected_domain
+    )
+
+    # If a question has no difficulty metadata, only "All Levels"
+    # should include it. This prevents an Easy/Hard selection from
+    # silently returning unrelated questions.
+    difficulty_ok = (
+        selected_difficulty in ("", "all")
+        or actual_difficulty == selected_difficulty
+    )
+
+    return domain_ok and difficulty_ok
+
+
+def get_filtered_indices(domain="all", difficulty="all"):
+    """Return original question indices matching the setup filters."""
+    return [
+        index
+        for index, question in enumerate(QUESTIONS)
+        if question_matches(question, domain, difficulty)
+    ]
+
+
+def get_active_indices():
+    """Return the selected interview's question indices."""
+    indices = session.get("interview_questions")
+
+    if isinstance(indices, list) and indices:
+        valid = []
+
+        for value in indices:
+            try:
+                index = int(value)
+            except (TypeError, ValueError):
+                continue
+
+            if 0 <= index < len(QUESTIONS):
+                valid.append(index)
+
+        if valid:
+            return valid
+
+    # Backward-compatible fallback.
+    return list(range(len(QUESTIONS)))
+
+
+def render_interview_page(
+    question_index,
+    evaluation=None,
+):
+    """Render the active interview question."""
+    active_indices = get_active_indices()
+
+    if not active_indices:
+        return redirect(url_for("interview"))
+
+    try:
+        position = int(question_index)
+    except (TypeError, ValueError):
+        position = 0
+
+    position = max(
+        0,
+        min(position, len(active_indices) - 1),
+    )
+
+    original_index = active_indices[position]
+    question = normalize_question(
+        QUESTIONS[original_index],
+        original_index,
+    )
+
+    answers = session.get("answers", {})
+
+    return render_template(
+        "interview.html",
+        user=current_user(),
+        question=question,
+        questions=[
+            normalize_question(QUESTIONS[i], i)
+            for i in active_indices
+        ],
+        question_index=position,
+        current_question=position,
+        original_question_index=original_index,
+        question_number=position + 1,
+        total_questions=len(active_indices),
+        progress=round(
+            (len(answers) / len(active_indices)) * 100
+        ) if active_indices else 0,
+        answered_questions=len(answers),
+        saved_answer=answers.get(str(original_index), ""),
+        evaluation=evaluation,
+        interview_mode=session.get(
+            "interview_mode",
+            "mock",
+        ),
+        interview_domain=session.get(
+            "interview_domain",
+            "All Domains",
+        ),
+        interview_difficulty=session.get(
+            "interview_difficulty",
+            "All Levels",
+        ),
+        domains=get_domains(),
+        difficulties=get_difficulties(),
+        question_count_options=get_question_count_options(
+            len(active_indices)
+        ),
+    )
+
+
+# ============================================================
 # START A NEW INTERVIEW
 # ============================================================
 
@@ -590,28 +783,72 @@ def start_interview():
             500,
         )
 
-    session["interview_mode"] = (
-        request.form.get("interview_mode", "mock").strip().lower()
-    )
-    session["interview_domain"] = (
+    domain = (
         request.form.get("domain", "all").strip()
+        or "all"
     )
-    session["interview_difficulty"] = (
+
+    difficulty = (
         request.form.get("difficulty", "all").strip()
+        or "all"
     )
 
     try:
-        question_count = int(
-            request.form.get("question_count", len(QUESTIONS))
+        requested_count = int(
+            request.form.get(
+                "question_count",
+                len(QUESTIONS),
+            )
         )
     except (TypeError, ValueError):
-        question_count = len(QUESTIONS)
+        requested_count = len(QUESTIONS)
 
-    session["question_count"] = max(
-        1, min(question_count, len(QUESTIONS))
+    filtered_indices = get_filtered_indices(
+        domain,
+        difficulty,
     )
 
-    # A new interview starts from question 1.
+    # If a specific difficulty was selected but the dataset has no
+    # matching difficulty metadata, tell the user instead of giving
+    # unexpected questions.
+    if not filtered_indices:
+        flash(
+            f"No questions found for Domain '{domain}' "
+            f"and Difficulty '{difficulty}'. "
+            "Please choose another combination.",
+            "error",
+        )
+        return redirect(url_for("interview"))
+
+    # Randomize the selected pool so repeated interviews do not
+    # always start with the same question.
+    random.shuffle(filtered_indices)
+
+    selected_count = max(
+        1,
+        min(
+            requested_count,
+            len(filtered_indices),
+        ),
+    )
+
+    selected_indices = filtered_indices[:selected_count]
+
+    session["interview_mode"] = (
+        request.form.get(
+            "interview_mode",
+            "mock",
+        ).strip().lower()
+        or "mock"
+    )
+
+    session["interview_domain"] = domain
+    session["interview_difficulty"] = difficulty
+    session["question_count"] = selected_count
+
+    # Store original question indices. The visible question number
+    # is the position inside this selected interview.
+    session["interview_questions"] = selected_indices
     session["current_question"] = 0
     session["answers"] = {}
     session["score"] = 0
@@ -633,45 +870,43 @@ def interview():
             500,
         )
 
-    # IMPORTANT:
-    # Do NOT reset the session here. Refreshing /interview should
-    # keep the candidate on the current question.
-    try:
-        current = int(session.get("current_question", 0))
-    except (TypeError, ValueError):
-        current = 0
+    # No active interview = show the setup screen.
+    # This is what allows Domain, Difficulty and Question Count
+    # to actually be selected before starting.
+    active_indices = session.get("interview_questions")
 
-    if current < 0 or current >= len(QUESTIONS):
-        current = 0
-        session["current_question"] = 0
+    if not isinstance(active_indices, list) or not active_indices:
+        setup_error = session.pop(
+            "interview_setup_error",
+            None,
+        )
 
-    question = normalize_question(QUESTIONS[current], current)
-    answers = session.get("answers", {})
+        return render_template(
+            "interview.html",
+            user=current_user(),
+            question=None,
+            questions=[],
+            question_index=0,
+            current_question=0,
+            question_number=0,
+            total_questions=0,
+            progress=0,
+            answered_questions=0,
+            saved_answer="",
+            evaluation=None,
+            interview_mode="mock",
+            interview_domain="all",
+            interview_difficulty="all",
+            domains=get_domains(),
+            difficulties=get_difficulties(),
+            question_count_options=get_question_count_options(
+                len(QUESTIONS)
+            ),
+            setup_error=setup_error,
+        )
 
-    return render_template(
-        "interview.html",
-        user=current_user(),
-        question=question,
-        questions=[
-            normalize_question(q, i)
-            for i, q in enumerate(QUESTIONS)
-        ],
-        question_index=current,
-        current_question=current,
-        question_number=current + 1,
-        total_questions=len(QUESTIONS),
-        progress=round(
-            (len(answers) / len(QUESTIONS)) * 100
-        ) if QUESTIONS else 0,
-        answered_questions=len(answers),
-        saved_answer=answers.get(str(current), ""),
-        evaluation=None,
-        interview_mode=session.get("interview_mode", "mock"),
-        interview_domain=session.get("interview_domain", "all"),
-        interview_difficulty=session.get("interview_difficulty", "all"),
-        domains=get_domains(),
-        difficulties=get_difficulties(),
-        question_count_options=get_question_count_options(),
+    return render_interview_page(
+        session.get("current_question", 0)
     )
 
 
@@ -682,22 +917,30 @@ def interview():
 @app.route("/interview/evaluate", methods=["POST"])
 @login_required
 def evaluate_answer():
-    if not QUESTIONS:
-        return "No interview questions were found.", 500
+    active_indices = get_active_indices()
+
+    if not active_indices:
+        return redirect(url_for("interview"))
 
     try:
-        question_index = int(
+        position = int(
             request.form.get(
                 "question_index",
                 session.get("current_question", 0),
             )
         )
     except (TypeError, ValueError):
-        question_index = session.get("current_question", 0)
+        position = session.get(
+            "current_question",
+            0,
+        )
 
-    question_index = max(
-        0, min(question_index, len(QUESTIONS) - 1)
+    position = max(
+        0,
+        min(position, len(active_indices) - 1),
     )
+
+    original_index = active_indices[position]
 
     answer = (
         request.form.get("answer")
@@ -705,16 +948,15 @@ def evaluate_answer():
         or ""
     ).strip()
 
-    # Save the answer immediately.
     answers = session.get("answers", {})
-    answers[str(question_index)] = answer
+    answers[str(original_index)] = answer
     session["answers"] = answers
-    session["current_question"] = question_index
+    session["current_question"] = position
     session.modified = True
 
     question = normalize_question(
-        QUESTIONS[question_index],
-        question_index,
+        QUESTIONS[original_index],
+        original_index,
     )
 
     expected = str(
@@ -725,46 +967,66 @@ def evaluate_answer():
         question.get("explanation", "")
     ).strip()
 
-    # Local evaluation — no external API required.
+    # Local evaluation — no external AI API required.
     if not answer:
         score = 0
         verdict = "No Answer"
-        feedback = "Please enter an answer before evaluating."
+        feedback = (
+            "Please enter an answer before evaluating."
+        )
+
     elif not expected:
         score = 0
         verdict = "Review Required"
         feedback = (
-            "This question does not have a configured expected answer. "
+            "This question has no configured expected answer. "
             "Review the response manually."
         )
+
     else:
-        answer_words = set(answer.lower().split())
-        expected_words = set(expected.lower().split())
+        answer_words = set(
+            answer.lower().split()
+        )
+
+        expected_words = set(
+            expected.lower().split()
+        )
 
         overlap = (
-            len(answer_words & expected_words)
+            len(
+                answer_words & expected_words
+            )
             / len(expected_words)
         ) if expected_words else 0
 
-        length_factor = min(len(answer.split()) / 80, 1.0)
+        length_factor = min(
+            len(answer.split()) / 80,
+            1.0,
+        )
 
         score = round(
-            min(100, (overlap * 70) + (length_factor * 30))
+            min(
+                100,
+                (overlap * 70)
+                + (length_factor * 30),
+            )
         )
 
         if score >= 80:
             verdict = "Excellent Answer"
             feedback = (
                 "Strong coverage of the expected concepts. "
-                "Keep your explanation structured and mention "
+                "Keep the explanation structured and mention "
                 "security, scalability, reliability, and trade-offs."
             )
+
         elif score >= 60:
             verdict = "Good Answer"
             feedback = (
                 "Good technical direction. Add more implementation "
                 "details and explain your design trade-offs."
             )
+
         elif score >= 35:
             verdict = "Needs Improvement"
             feedback = (
@@ -772,6 +1034,7 @@ def evaluate_answer():
                 "OpenShift/Kubernetes components, implementation steps, "
                 "security controls, and operational considerations."
             )
+
         else:
             verdict = "Keep Practicing"
             feedback = (
@@ -779,23 +1042,8 @@ def evaluate_answer():
                 "security, scalability, reliability, and trade-offs."
             )
 
-    return render_template(
-        "interview.html",
-        user=current_user(),
-        question=question,
-        questions=[
-            normalize_question(q, i)
-            for i, q in enumerate(QUESTIONS)
-        ],
-        question_index=question_index,
-        current_question=question_index,
-        question_number=question_index + 1,
-        total_questions=len(QUESTIONS),
-        progress=round(
-            (len(answers) / len(QUESTIONS)) * 100
-        ) if QUESTIONS else 0,
-        answered_questions=len(answers),
-        saved_answer=answer,
+    return render_interview_page(
+        position,
         evaluation={
             "score": score,
             "verdict": verdict,
@@ -806,19 +1054,11 @@ def evaluate_answer():
                 "configured expected answer; no external AI API is required."
             ),
         },
-        interview_mode=session.get("interview_mode", "mock"),
-        interview_domain=session.get("interview_domain", "all"),
-        interview_difficulty=session.get("interview_difficulty", "all"),
-        domains=get_domains(),
-        difficulties=get_difficulties(),
-        question_count_options=get_question_count_options(),
     )
 
 
-
-
 # ============================================================
-# SUBMIT INTERVIEW ANSWER
+# SUBMIT INTERVIEW ANSWER / NEXT
 # ============================================================
 
 @app.route(
@@ -827,37 +1067,28 @@ def evaluate_answer():
 )
 @login_required
 def submit_answer():
+    active_indices = get_active_indices()
 
-    data = request.get_json(
-        silent=True
-    )
+    if not active_indices:
+        return redirect(url_for("interview"))
+
+    data = request.get_json(silent=True)
 
     if data:
-
-        question_index = data.get(
+        position = data.get(
             "question_index",
-            session.get(
-                "current_question",
-                0
-            )
+            session.get("current_question", 0),
         )
-
         answer = (
             data.get("answer")
             or data.get("response")
             or ""
         )
-
     else:
-
-        question_index = request.form.get(
+        position = request.form.get(
             "question_index",
-            session.get(
-                "current_question",
-                0
-            )
+            session.get("current_question", 0),
         )
-
         answer = (
             request.form.get("answer")
             or request.form.get("response")
@@ -865,101 +1096,82 @@ def submit_answer():
         )
 
     try:
-
-        question_index = int(
-            question_index
-        )
-
+        position = int(position)
     except (TypeError, ValueError):
-
-        question_index = session.get(
+        position = session.get(
             "current_question",
-            0
+            0,
         )
 
-    if question_index < 0:
-
-        question_index = 0
-
-    if question_index >= len(QUESTIONS):
-
-        question_index = len(QUESTIONS) - 1
-
-    answers = session.get(
-        "answers",
-        {}
+    position = max(
+        0,
+        min(position, len(active_indices) - 1),
     )
 
-    answers[str(question_index)] = str(
+    original_index = active_indices[position]
+
+    answers = session.get("answers", {})
+    answers[str(original_index)] = str(
         answer
     ).strip()
 
     session["answers"] = answers
 
-    session.modified = True
+    next_position = position + 1
 
-    next_index = question_index + 1
-
-    # Interview finished.
-    if next_index >= len(QUESTIONS):
-
+    if next_position >= len(active_indices):
         session["current_question"] = (
-            len(QUESTIONS) - 1
+            len(active_indices) - 1
         )
 
         score = calculate_score()
-
         session["score"] = score
 
         if data:
-
             return jsonify({
                 "success": True,
                 "completed": True,
                 "score": score,
-                "redirect": url_for(
-                    "result"
-                )
+                "redirect": url_for("result"),
             })
 
         return redirect(
             url_for("result")
         )
 
-    # Continue.
-    session["current_question"] = (
-        next_index
-    )
+    session["current_question"] = next_position
+    session.modified = True
 
     question = normalize_question(
-        QUESTIONS[next_index],
-        next_index
+        QUESTIONS[
+            active_indices[next_position]
+        ],
+        active_indices[next_position],
     )
 
     score = calculate_score()
 
     if data:
-
         return jsonify({
             "success": True,
             "completed": False,
             "next_question": question,
-            "question_index": next_index,
-            "current_question": next_index,
-            "total_questions": len(QUESTIONS),
+            "question_index": next_position,
+            "current_question": next_position,
+            "total_questions": len(active_indices),
             "progress": round(
                 (
-                    (next_index)
-                    / len(QUESTIONS)
+                    len(answers)
+                    / len(active_indices)
                 ) * 100
             ),
-            "score": score
+            "score": score,
         })
 
     return redirect(
         url_for(
             "interview_question",
-            question_index=next_index
+            question_index=next_position,
         )
     )
 
@@ -973,49 +1185,19 @@ def submit_answer():
 )
 @login_required
 def interview_question(question_index):
-    if not QUESTIONS:
-        return "No questions available.", 500
+    active_indices = get_active_indices()
 
-    if question_index < 0:
-        question_index = 0
+    if not active_indices:
+        return redirect(url_for("interview"))
 
-    if question_index >= len(QUESTIONS):
+    if (
+        question_index < 0
+        or question_index >= len(active_indices)
+    ):
         return redirect(url_for("result"))
 
     session["current_question"] = question_index
-
-    question = normalize_question(
-        QUESTIONS[question_index],
-        question_index,
-    )
-
-    answers = session.get("answers", {})
-
-    return render_template(
-        "interview.html",
-        user=current_user(),
-        question=question,
-        questions=[
-            normalize_question(q, i)
-            for i, q in enumerate(QUESTIONS)
-        ],
-        question_index=question_index,
-        current_question=question_index,
-        question_number=question_index + 1,
-        total_questions=len(QUESTIONS),
-        progress=round(
-            (len(answers) / len(QUESTIONS)) * 100
-        ) if QUESTIONS else 0,
-        answered_questions=len(answers),
-        saved_answer=answers.get(str(question_index), ""),
-        evaluation=None,
-        interview_mode=session.get("interview_mode", "mock"),
-        interview_domain=session.get("interview_domain", "all"),
-        interview_difficulty=session.get("interview_difficulty", "all"),
-        domains=get_domains(),
-        difficulties=get_difficulties(),
-        question_count_options=get_question_count_options(),
-    )
+    return render_interview_page(question_index)
 
 
 # ============================================================
@@ -1028,37 +1210,47 @@ def interview_question(question_index):
 )
 @login_required
 def next_question():
+    active_indices = get_active_indices()
+
+    if not active_indices:
+        return jsonify({
+            "completed": True,
+            "redirect": url_for("interview"),
+        })
 
     current = session.get(
         "current_question",
-        0
+        0,
     )
 
-    next_index = current + 1
+    try:
+        current = int(current)
+    except (TypeError, ValueError):
+        current = 0
 
-    if next_index >= len(QUESTIONS):
+    next_position = current + 1
 
+    if next_position >= len(active_indices):
         return jsonify({
             "completed": True,
-            "redirect": url_for(
-                "result"
-            )
+            "redirect": url_for("result"),
         })
 
-    session["current_question"] = (
-        next_index
-    )
+    session["current_question"] = next_position
+    session.modified = True
+
+    original_index = active_indices[next_position]
 
     question = normalize_question(
-        QUESTIONS[next_index],
-        next_index
+        QUESTIONS[original_index],
+        original_index,
     )
 
     return jsonify({
         "completed": False,
         "question": question,
-        "question_index": next_index,
-        "total_questions": len(QUESTIONS)
+        "question_index": next_position,
+        "total_questions": len(active_indices),
     })
 
 
@@ -1069,36 +1261,38 @@ def next_question():
 @app.route("/result")
 @login_required
 def result():
+    active_indices = get_active_indices()
+
+    if not active_indices:
+        return redirect(url_for("interview"))
 
     score = calculate_score()
-
     session["score"] = score
 
     answers = session.get(
         "answers",
-        {}
+        {},
     )
 
     results = []
 
-    for index, original in enumerate(
-        QUESTIONS
+    for position, original_index in enumerate(
+        active_indices
     ):
-
         question = normalize_question(
-            original,
-            index
+            QUESTIONS[original_index],
+            original_index,
         )
 
         user_answer = answers.get(
-            str(index),
-            ""
+            str(original_index),
+            "",
         )
 
         expected = str(
             question.get(
                 "answer",
-                ""
+                "",
             )
         ).strip()
 
@@ -1109,20 +1303,23 @@ def result():
         )
 
         results.append({
-            "index": index + 1,
+            "index": position + 1,
             "question": question.get(
                 "question",
-                ""
+                "",
             ),
-            "category": question.get(
-                "category",
-                "OpenShift"
+            "category": (
+                question.get("domain")
+                or question.get(
+                    "category",
+                    "OpenShift",
+                )
             ),
             "user_answer": user_answer,
             "correct_answer": expected,
             "explanation": question.get(
                 "explanation",
-                ""
+                "",
             ),
             "correct": is_correct,
         })
@@ -1139,40 +1336,23 @@ def result():
     )
 
     if score >= 85:
-
         performance = "Excellent"
-
     elif score >= 70:
-
         performance = "Strong"
-
     elif score >= 50:
-
         performance = "Needs Improvement"
-
     else:
-
         performance = "Keep Practicing"
 
     return render_template(
         "result.html",
-
         user=current_user(),
-
         score=score,
-
-        total_questions=len(
-            QUESTIONS
-        ),
-
+        total_questions=len(active_indices),
         correct_count=correct_count,
-
         incorrect_count=incorrect_count,
-
         performance=performance,
-
         results=results,
-
         answers=answers,
     )
 
@@ -1184,11 +1364,11 @@ def result():
 @app.route("/reset")
 @login_required
 def reset_interview():
-
+    session.pop("interview_questions", None)
+    session.pop("question_count", None)
     session["current_question"] = 0
     session["answers"] = {}
     session["score"] = 0
-
     session.modified = True
 
     return redirect(
@@ -1241,36 +1421,41 @@ def api_me():
 )
 @login_required
 def interview_status():
-
     answers = session.get(
         "answers",
-        {}
+        {},
     )
+
+    active_indices = get_active_indices()
 
     current = session.get(
         "current_question",
-        0
+        0,
     )
 
     return jsonify({
         "current_question": current,
-        "total_questions": len(
-            QUESTIONS
-        ),
-        "answered_questions": len(
-            answers
-        ),
+        "total_questions": len(active_indices),
+        "answered_questions": len(answers),
         "score": calculate_score(),
         "progress": (
             round(
                 (
                     len(answers)
-                    / len(QUESTIONS)
+                    / len(active_indices)
                 ) * 100
             )
-            if QUESTIONS
+            if active_indices
             else 0
-        )
+        ),
+        "domain": session.get(
+            "interview_domain",
+            "all",
+        ),
+        "difficulty": session.get(
+            "interview_difficulty",
+            "all",
+        ),
     })
 
 
