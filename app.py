@@ -547,55 +547,274 @@ def dashboard():
 # START INTERVIEW
 # ============================================================
 
-@app.route("/interview")
+def get_domains():
+    """Return unique question categories/domains for the setup screen."""
+    domains = []
+    for q in QUESTIONS:
+        normalized = normalize_question(q)
+        value = str(normalized.get("category", "OpenShift")).strip()
+        if value and value not in domains:
+            domains.append(value)
+    return domains or ["OpenShift"]
+
+
+def get_difficulties():
+    """Return unique difficulty levels for the setup screen."""
+    difficulties = []
+    for q in QUESTIONS:
+        if isinstance(q, dict):
+            value = str(q.get("difficulty", "")).strip()
+            if value and value not in difficulties:
+                difficulties.append(value)
+    return difficulties or ["Intermediate"]
+
+
+def get_question_count_options():
+    """Question-count choices that are valid for the loaded question bank."""
+    total = len(QUESTIONS)
+    if total <= 0:
+        return [1]
+    return [n for n in (5, 10, 15, 20) if n <= total] or [total]
+
+
+# ============================================================
+# START A NEW INTERVIEW
+# ============================================================
+
+@app.route("/start-interview", methods=["POST"])
 @login_required
-def interview():
-
+def start_interview():
     if not QUESTIONS:
-
         return (
-            "No interview questions were found. "
-            "Check questions.json.",
-            500
+            "No interview questions were found. Check questions.json.",
+            500,
         )
 
-    # Start / restart interview.
+    session["interview_mode"] = (
+        request.form.get("interview_mode", "mock").strip().lower()
+    )
+    session["interview_domain"] = (
+        request.form.get("domain", "all").strip()
+    )
+    session["interview_difficulty"] = (
+        request.form.get("difficulty", "all").strip()
+    )
+
+    try:
+        question_count = int(
+            request.form.get("question_count", len(QUESTIONS))
+        )
+    except (TypeError, ValueError):
+        question_count = len(QUESTIONS)
+
+    session["question_count"] = max(
+        1, min(question_count, len(QUESTIONS))
+    )
+
+    # A new interview starts from question 1.
     session["current_question"] = 0
     session["answers"] = {}
     session["score"] = 0
-
     session.modified = True
 
-    question = normalize_question(
-        QUESTIONS[0],
-        0
-    )
+    return redirect(url_for("interview"))
+
+
+# ============================================================
+# INTERVIEW
+# ============================================================
+
+@app.route("/interview")
+@login_required
+def interview():
+    if not QUESTIONS:
+        return (
+            "No interview questions were found. Check questions.json.",
+            500,
+        )
+
+    # IMPORTANT:
+    # Do NOT reset the session here. Refreshing /interview should
+    # keep the candidate on the current question.
+    try:
+        current = int(session.get("current_question", 0))
+    except (TypeError, ValueError):
+        current = 0
+
+    if current < 0 or current >= len(QUESTIONS):
+        current = 0
+        session["current_question"] = 0
+
+    question = normalize_question(QUESTIONS[current], current)
+    answers = session.get("answers", {})
 
     return render_template(
         "interview.html",
-
         user=current_user(),
-
         question=question,
-
         questions=[
-            normalize_question(
-                q,
-                i
-            )
+            normalize_question(q, i)
             for i, q in enumerate(QUESTIONS)
         ],
-
-        question_index=0,
-
-        current_question=0,
-
+        question_index=current,
+        current_question=current,
+        question_number=current + 1,
         total_questions=len(QUESTIONS),
-
-        progress=0,
-
-        answered_questions=0,
+        progress=round(
+            (len(answers) / len(QUESTIONS)) * 100
+        ) if QUESTIONS else 0,
+        answered_questions=len(answers),
+        saved_answer=answers.get(str(current), ""),
+        evaluation=None,
+        interview_mode=session.get("interview_mode", "mock"),
+        interview_domain=session.get("interview_domain", "all"),
+        interview_difficulty=session.get("interview_difficulty", "all"),
+        domains=get_domains(),
+        difficulties=get_difficulties(),
+        question_count_options=get_question_count_options(),
     )
+
+
+# ============================================================
+# EVALUATE ANSWER
+# ============================================================
+
+@app.route("/interview/evaluate", methods=["POST"])
+@login_required
+def evaluate_answer():
+    if not QUESTIONS:
+        return "No interview questions were found.", 500
+
+    try:
+        question_index = int(
+            request.form.get(
+                "question_index",
+                session.get("current_question", 0),
+            )
+        )
+    except (TypeError, ValueError):
+        question_index = session.get("current_question", 0)
+
+    question_index = max(
+        0, min(question_index, len(QUESTIONS) - 1)
+    )
+
+    answer = (
+        request.form.get("answer")
+        or request.form.get("response")
+        or ""
+    ).strip()
+
+    # Save the answer immediately.
+    answers = session.get("answers", {})
+    answers[str(question_index)] = answer
+    session["answers"] = answers
+    session["current_question"] = question_index
+    session.modified = True
+
+    question = normalize_question(
+        QUESTIONS[question_index],
+        question_index,
+    )
+
+    expected = str(
+        question.get("answer", "")
+    ).strip()
+
+    explanation = str(
+        question.get("explanation", "")
+    ).strip()
+
+    # Local evaluation — no external API required.
+    if not answer:
+        score = 0
+        verdict = "No Answer"
+        feedback = "Please enter an answer before evaluating."
+    elif not expected:
+        score = 0
+        verdict = "Review Required"
+        feedback = (
+            "This question does not have a configured expected answer. "
+            "Review the response manually."
+        )
+    else:
+        answer_words = set(answer.lower().split())
+        expected_words = set(expected.lower().split())
+
+        overlap = (
+            len(answer_words & expected_words)
+            / len(expected_words)
+        ) if expected_words else 0
+
+        length_factor = min(len(answer.split()) / 80, 1.0)
+
+        score = round(
+            min(100, (overlap * 70) + (length_factor * 30))
+        )
+
+        if score >= 80:
+            verdict = "Excellent Answer"
+            feedback = (
+                "Strong coverage of the expected concepts. "
+                "Keep your explanation structured and mention "
+                "security, scalability, reliability, and trade-offs."
+            )
+        elif score >= 60:
+            verdict = "Good Answer"
+            feedback = (
+                "Good technical direction. Add more implementation "
+                "details and explain your design trade-offs."
+            )
+        elif score >= 35:
+            verdict = "Needs Improvement"
+            feedback = (
+                "Some relevant concepts are present. Add concrete "
+                "OpenShift/Kubernetes components, implementation steps, "
+                "security controls, and operational considerations."
+            )
+        else:
+            verdict = "Keep Practicing"
+            feedback = (
+                "Expand the response with architecture, implementation, "
+                "security, scalability, reliability, and trade-offs."
+            )
+
+    return render_template(
+        "interview.html",
+        user=current_user(),
+        question=question,
+        questions=[
+            normalize_question(q, i)
+            for i, q in enumerate(QUESTIONS)
+        ],
+        question_index=question_index,
+        current_question=question_index,
+        question_number=question_index + 1,
+        total_questions=len(QUESTIONS),
+        progress=round(
+            (len(answers) / len(QUESTIONS)) * 100
+        ) if QUESTIONS else 0,
+        answered_questions=len(answers),
+        saved_answer=answer,
+        evaluation={
+            "score": score,
+            "verdict": verdict,
+            "feedback": feedback,
+            "model_answer": explanation or expected,
+            "explanation": (
+                "The response is evaluated locally against the "
+                "configured expected answer; no external AI API is required."
+            ),
+        },
+        interview_mode=session.get("interview_mode", "mock"),
+        interview_domain=session.get("interview_domain", "all"),
+        interview_difficulty=session.get("interview_difficulty", "all"),
+        domains=get_domains(),
+        difficulties=get_difficulties(),
+        question_count_options=get_question_count_options(),
+    )
+
+
 
 
 # ============================================================
@@ -753,74 +972,49 @@ def submit_answer():
     "/interview/<int:question_index>"
 )
 @login_required
-def interview_question(
-    question_index
-):
-
+def interview_question(question_index):
     if not QUESTIONS:
-
-        return (
-            "No questions available.",
-            500
-        )
+        return "No questions available.", 500
 
     if question_index < 0:
-
         question_index = 0
 
     if question_index >= len(QUESTIONS):
+        return redirect(url_for("result"))
 
-        return redirect(
-            url_for("result")
-        )
-
-    session["current_question"] = (
-        question_index
-    )
+    session["current_question"] = question_index
 
     question = normalize_question(
         QUESTIONS[question_index],
-        question_index
+        question_index,
     )
 
-    answered = len(
-        session.get(
-            "answers",
-            {}
-        )
-    )
-
-    progress = round(
-        (
-            question_index
-            / len(QUESTIONS)
-        ) * 100
-    )
+    answers = session.get("answers", {})
 
     return render_template(
         "interview.html",
-
         user=current_user(),
-
         question=question,
-
-        question_index=question_index,
-
-        current_question=question_index,
-
-        total_questions=len(QUESTIONS),
-
-        progress=progress,
-
-        answered_questions=answered,
-
         questions=[
-            normalize_question(
-                q,
-                i
-            )
+            normalize_question(q, i)
             for i, q in enumerate(QUESTIONS)
         ],
+        question_index=question_index,
+        current_question=question_index,
+        question_number=question_index + 1,
+        total_questions=len(QUESTIONS),
+        progress=round(
+            (len(answers) / len(QUESTIONS)) * 100
+        ) if QUESTIONS else 0,
+        answered_questions=len(answers),
+        saved_answer=answers.get(str(question_index), ""),
+        evaluation=None,
+        interview_mode=session.get("interview_mode", "mock"),
+        interview_domain=session.get("interview_domain", "all"),
+        interview_difficulty=session.get("interview_difficulty", "all"),
+        domains=get_domains(),
+        difficulties=get_difficulties(),
+        question_count_options=get_question_count_options(),
     )
 
 
